@@ -2,9 +2,9 @@
   <div className="p-6 bg-gray-900 shadow rounded-lg">
     <div class="wrapper">
       <h1 className="text-xl border-b">Database Checker</h1>
-      <p>Checkout user <b>{{ city == "" ? "in database" : cityName }}</b></p>
+      <p>Checkout symbol <b>{{ realCity == "" ? "in database" : cityName }}</b></p>
       <input class="test" v-model="city" placeholder="Enter city "></input>
-      <button v-if="!city == ''" className="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="">
+      <button v-if="!realCity == ''" className="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="">
         Submit
       </button>
     </div>
@@ -21,7 +21,10 @@ export default {
   },
   computed: {
     cityName() {
-      return "`" + this.city + "`"
+      return "`USDT" + this.realCity + "`"
+    },
+    realCity() {
+      return this.city.trim().toUpperCase()
     }
   }
 }
