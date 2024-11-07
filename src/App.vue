@@ -1,31 +1,51 @@
 <template>
-  <div className="p-6 bg-gray-900 shadow rounded-lg">
+  <div className="p-6 bg-gray-800 shadow rounded-lg">
     <div class="wrapper">
       <h1 className="text-xl border-b">Database Checker</h1>
-      <p>Checkout symbol <b>{{ realCity == "" ? "in database" : cityName }}</b></p>
-      <input class="test" v-model="city" placeholder="Enter city "></input>
-      <button v-if="!realCity == ''" className="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="">
+      <p>Checkout symbol <b>{{ realSymbol == "" ? "in database" : symbolName }}</b></p>
+      <input class="test" v-model="symbol" placeholder="Enter symbol "></input>
+      <button v-if="!realSymbol == ''" className="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="fetchPrice(symbolName)">
         Submit
       </button>
+      <div v-if="!realSymbol == '' & price != null">
+        <p>Current price of BTC/USDT: {{ price }}</p>
+      </div>
+      <div v-else="priceNull()"></div>
     </div>
   </div>
 </template>
 
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      city: ""
+      symbol: "",
+      price: null
     }
   },
   computed: {
-    cityName() {
-      return "`USDT" + this.realCity + "`"
+    symbolName() {
+      return this.realSymbol + "USDT"
     },
-    realCity() {
-      return this.city.trim().toUpperCase()
+    realSymbol() {
+      return this.symbol.trim().toUpperCase()
     }
+  },
+  methods: {
+    async fetchPrice(symbol) {
+      try {
+        const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+        this.price = Math.round(response.data.price);
+      } catch (error) {
+        console.error('Error fetching price:', error);
+      }
+    }
+  },
+  priceNull() {
+    price = null
   }
 }
 </script>
@@ -39,7 +59,7 @@ export default {
 .wrapper {
   width: 400px;
   height: 300px;
-  border: 3px solid red;
+  border: 3px solid rgb(47, 97, 84);
   border-radius: 50px;
 }
 .wrapper h1 {
