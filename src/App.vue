@@ -52,9 +52,6 @@ export default {
 
 
 <style scoped>
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 .wrapper {
   width: 400px;
