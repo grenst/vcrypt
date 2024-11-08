@@ -1,20 +1,18 @@
 <template>
-  <div className="p-6 bg-gray-800 shadow rounded-lg">
+  <div class="p-6 bg-gray-800 shadow rounded-lg">
     <div class="wrapper">
-      <h1 className="text-xl border-b">Database Checker</h1>
+      <h1 class="text-xl border-b">Database Checker</h1>
       <p>Checkout symbol <b>{{ realSymbol == "" ? "in database" : symbolName }}</b></p>
       <input class="test" v-model="symbol" placeholder="Enter symbol "></input>
-      <button v-if="!realSymbol == ''" className="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="fetchPrice(symbolName)">
+      <button v-if="realSymbol" class="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="connectToWebSocket(symbolName)">
         Submit
       </button>
-      <div v-if="!realSymbol == '' & price != null">
-        <p>Current price of BTC/USDT: {{ price }}</p>
+      <div v-if="realSymbol && price !== null">
+        <p>Current price of {{ symbolName }}: {{ price }}</p>
       </div>
-      <div v-else="priceNull()"></div>
     </div>
   </div>
 </template>
-
 
 <script>
 import axios from 'axios';
@@ -23,36 +21,56 @@ export default {
   data() {
     return {
       symbol: "",
-      price: null
+      price: null,
+      ws: null // WebSocket connection
     }
   },
   computed: {
     symbolName() {
-      return this.realSymbol + "USDT"
+      return this.realSymbol + "USDT";
     },
     realSymbol() {
-      return this.symbol.trim().toUpperCase()
+      return this.symbol.trim().toUpperCase();
     }
   },
   methods: {
-    async fetchPrice(symbol) {
-      try {
-        const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
-        this.price = Math.round(response.data.price);
-      } catch (error) {
-        console.error('Error fetching price:', error);
+    // Подключение к WebSocket для получения обновлений цены
+    connectToWebSocket(symbol) {
+      // Закрываем предыдущее соединение, если оно существует
+      if (this.ws) {
+        this.ws.close();
       }
+
+      // Создаем новое WebSocket соединение
+      this.ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@ticker`);
+
+      // Обрабатываем сообщение от WebSocket
+      this.ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        this.price = Math.round(data.c); // 'c' - текущая цена в сообщении от Binance
+      };
+
+      // Обрабатываем ошибки WebSocket
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      // Закрываем соединение при размонтировании компонента
+      this.ws.onclose = () => {
+        console.log('WebSocket closed');
+      };
     }
   },
-  priceNull() {
-    price = null
+  beforeDestroy() {
+    // Закрываем WebSocket соединение при уничтожении компонента
+    if (this.ws) {
+      this.ws.close();
+    }
   }
 }
 </script>
 
-
 <style scoped>
-
 .wrapper {
   width: 400px;
   height: 300px;
@@ -77,18 +95,6 @@ export default {
   border-bottom-color: #6e2d7d;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
 button {
   outline: none;
 }
