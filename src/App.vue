@@ -8,15 +8,13 @@
         Submit
       </button>
       <div v-if="realSymbol && price !== null">
-        <p>Current price of {{ symbolName }}: {{ price }}</p>
+        <p>Current price of {{ symbolName }}: {{ formattedPrice }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   data() {
     return {
@@ -31,6 +29,11 @@ export default {
     },
     realSymbol() {
       return this.symbol.trim().toUpperCase();
+    },
+    // Форматирование цены в зависимости от символа
+    formattedPrice() {
+      const decimalPlaces = this.getDecimalPlaces(this.symbolName);
+      return this.price !== null ? this.price.toFixed(decimalPlaces) : null;
     }
   },
   methods: {
@@ -47,7 +50,7 @@ export default {
       // Обрабатываем сообщение от WebSocket
       this.ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        this.price = Math.round(data.c); // 'c' - текущая цена в сообщении от Binance
+        this.price = parseFloat(data.c); // 'c' - текущая цена в сообщении от Binance
       };
 
       // Обрабатываем ошибки WebSocket
@@ -59,6 +62,18 @@ export default {
       this.ws.onclose = () => {
         console.log('WebSocket closed');
       };
+    },
+    // Определение количества знаков после запятой для каждого символа
+    getDecimalPlaces(symbol) {
+      const precisionMap = {
+        BTCUSDT: 2,
+        ETHUSDT: 2,
+        LTCUSDT: 2,
+        XRPUSDT: 4,
+        DOGEUSDT: 6,
+        // Добавьте другие символы, если нужно
+      };
+      return precisionMap[symbol] || 2; // значение по умолчанию - 2 знака
     }
   },
   beforeDestroy() {
