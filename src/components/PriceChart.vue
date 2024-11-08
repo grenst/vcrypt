@@ -1,4 +1,3 @@
-<!-- PriceChart.vue -->
 <template>
     <div>
       <canvas ref="chart"></canvas>
@@ -6,74 +5,73 @@
   </template>
   
   <script>
+  import { Line } from 'vue-chartjs';
   import { Chart, registerables } from 'chart.js';
   Chart.register(...registerables);
   
   export default {
-    props: ['price'],
+    extends: Line,
+    props: {
+      priceData: {
+        type: Array,
+        required: true
+      }
+    },
     data() {
       return {
-        chart: null,
-        prices: [], // массив для хранения последних цен
-        maxPoints: 20 // максимальное количество точек на графике
+        chartData: {
+          labels: Array(this.priceData.length).fill(""),
+          datasets: [
+            {
+              label: 'Price',
+              data: this.priceData,
+              borderColor: 'rgba(75, 192, 192, 1)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        chartOptions: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              display: false
+            },
+            y: {
+              beginAtZero: false,
+              ticks: {
+                callback: function(value) {
+                  return value;
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
       };
     },
     watch: {
-      price(newPrice) {
-        if (newPrice !== null) {
-          this.updateChart(newPrice);
-        }
+      priceData(newData) {
+        this.chartData.datasets[0].data = newData;
+        this.chartData.labels = Array(newData.length).fill("");
+        this.$data._chart.update();
       }
     },
     mounted() {
-      this.initChart();
-    },
-    methods: {
-      initChart() {
-        this.chart = new Chart(this.$refs.chart, {
-          type: 'line',
-          data: {
-            labels: Array(this.maxPoints).fill(''), // пустые подписи на оси X
-            datasets: [
-              {
-                label: 'Price',
-                data: [],
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.2,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: { display: false }, // скрываем ось X
-              y: { display: true },
-            },
-          },
-        });
-      },
-      updateChart(newPrice) {
-        if (this.prices.length >= this.maxPoints) {
-          this.prices.shift(); // удаляем старую цену, если превышено maxPoints
-          this.chart.data.labels.shift();
-        }
-  
-        // Добавляем новую цену и обновляем график
-        this.prices.push(newPrice);
-        this.chart.data.labels.push(''); // добавляем пустую метку на оси X
-        this.chart.data.datasets[0].data = this.prices;
-        this.chart.update();
-      },
-    },
+      this.renderChart(this.chartData, this.chartOptions);
+    }
   };
   </script>
   
   <style scoped>
-  div {
-    height: 150px;
+  canvas {
+    height: 100px;
   }
   </style>
   
