@@ -3,32 +3,29 @@
     <div class="wrapper">
       <h1 class="text-xl border-b">Database Checker</h1>
       <p>Checkout symbol <b>{{ realSymbol == "" ? "in database" : symbolName }}</b></p>
-      <input class="test" v-model="symbol" placeholder="Enter symbol "></input>
-      <button v-if="realSymbol" class="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" @click="connectToWebSocket(symbolName)">
+      <input class="test" v-model="symbol" placeholder="Enter symbol"></input>
+      <button v-if="realSymbol" 
+              class="m-2 p-2 text-black font-medium rounded-lg transition ease-in-out delay-50 bg-cyan-500 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-indigo-500 duration-150 shadow-indigo-500/50 hover:shadow-cyan-500/50" 
+              @click="checkSymbolAndConnect">
         Submit
       </button>
       <div v-if="realSymbol && price !== null">
         <p>Current price of {{ symbolName }}: {{ formattedPrice }}</p>
-        <PriceChart :priceData="priceHistory" />
       </div>
+      <p v-if="error" class="text-red-500 mt-2">{{ error }}</p>
     </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import PriceChart from '/src/components/PriceChart.vue';
-
 export default {
-  components: {
-    PriceChart
-  },
   data() {
     return {
       symbol: "",
       price: null,
-      ws: null, // WebSocket connection
-      priceHistory: [] // Array to store price history for chart
+      ws: null,
+      error: null,
+      symbolPrecisions: {},
     }
   },
   computed: {
@@ -38,62 +35,93 @@ export default {
     realSymbol() {
       return this.symbol.trim().toUpperCase();
     },
-    // Форматирование цены в зависимости от символа
     formattedPrice() {
-      const decimalPlaces = this.getDecimalPlaces(this.symbolName);
+      const decimalPlaces = this.symbolPrecisions[this.symbolName] ?? 2;
       return this.price !== null ? this.price.toFixed(decimalPlaces) : null;
     }
   },
   methods: {
-    // Подключение к WebSocket для получения обновлений цены
+    async fetchSymbolPrecision(symbol) {
+      try {
+        const response = await fetch(`https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}`);
+        const data = await response.json();
+        
+        if (data.symbols && data.symbols[0]) {
+          // Находим фильтр с ценой
+          const priceFilter = data.symbols[0].filters.find(
+            filter => filter.filterType === "PRICE_FILTER"
+          );
+          
+          if (priceFilter) {
+            // Получаем количество десятичных знаков из tickSize
+            const tickSize = priceFilter.tickSize;
+            const decimalPlaces = this.getDecimalPlacesFromTickSize(tickSize);
+            this.symbolPrecisions[symbol] = decimalPlaces;
+            return decimalPlaces;
+          }
+        }
+        throw new Error("Could not determine price precision");
+      } catch (err) {
+        console.error("Error fetching symbol precision:", err);
+        return 2; // Возвращаем значение по умолчанию в случае ошибки
+      }
+    },
+    
+    getDecimalPlacesFromTickSize(tickSize) {
+      // Преобразуем tickSize в строку и убираем научную нотацию
+      const strTickSize = parseFloat(tickSize).toString();
+      // Находим позицию десятичной точки
+      const decimalPos = strTickSize.indexOf('.');
+      if (decimalPos === -1) return 0;
+      
+      // Считаем значащие нули после десятичной точки
+      let zeros = 0;
+      for (let i = decimalPos + 1; i < strTickSize.length; i++) {
+        if (strTickSize[i] === '0') {
+          zeros++;
+        } else {
+          break;
+        }
+      }
+      return zeros + 1;
+    },
+
+    async checkSymbolAndConnect() {
+      this.error = null;
+      try {
+        if (!this.symbolPrecisions[this.symbolName]) {
+          await this.fetchSymbolPrecision(this.symbolName);
+        }
+        this.connectToWebSocket(this.symbolName);
+      } catch (err) {
+        this.error = "Invalid symbol or network error";
+        console.error(err);
+      }
+    },
+
     connectToWebSocket(symbol) {
-      // Закрываем предыдущее соединение, если оно существует
       if (this.ws) {
         this.ws.close();
       }
-
-      // Создаем новое WebSocket соединение
+      
       this.ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@ticker`);
-
-      // Обрабатываем сообщение от WebSocket
+      
       this.ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        this.price = parseFloat(data.c); // 'c' - текущая цена в сообщении от Binance
-        this.updatePriceHistory(this.price);
+        this.price = parseFloat(data.c);
       };
-
-      // Обрабатываем ошибки WebSocket
+      
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        this.error = "WebSocket connection error";
       };
-
-      // Закрываем соединение при размонтировании компонента
+      
       this.ws.onclose = () => {
         console.log('WebSocket closed');
       };
-    },
-    // Добавление новой цены в массив priceHistory и ограничение его длины
-    updatePriceHistory(newPrice) {
-      this.priceHistory.push(newPrice);
-      if (this.priceHistory.length > 20) { // Ограничиваем количество точек, например, 20
-        this.priceHistory.shift();
-      }
-    },
-    // Определение количества знаков после запятой для каждого символа
-    getDecimalPlaces(symbol) {
-      const precisionMap = {
-        BTCUSDT: 2,
-        ETHUSDT: 2,
-        LTCUSDT: 2,
-        XRPUSDT: 4,
-        DOGEUSDT: 6,
-        // Добавьте другие символы, если нужно
-      };
-      return precisionMap[symbol] || 2; // значение по умолчанию - 2 знака
     }
   },
   beforeDestroy() {
-    // Закрываем WebSocket соединение при уничтожении компонента
     if (this.ws) {
       this.ws.close();
     }
