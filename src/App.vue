@@ -9,16 +9,21 @@
               @click="checkSymbolAndConnect">
         Submit
       </button>
-      <div v-if="realSymbol && price !== null">
-        <p>Current price of {{ symbolName }}: {{ formattedPrice }}</p>
-      </div>
+      <PriceChart v-if="realSymbol && price !== null" 
+                  :symbolName="symbolName" 
+                  :formattedPrice="formattedPrice" />
       <p v-if="error" class="text-red-500 mt-2">{{ error }}</p>
     </div>
   </div>
 </template>
 
 <script>
+import PriceChart from './components/PriceChart.vue';
+
 export default {
+  components: {
+    PriceChart
+  },
   data() {
     return {
       symbol: "",

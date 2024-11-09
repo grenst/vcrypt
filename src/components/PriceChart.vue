@@ -1,100 +1,124 @@
 <template>
-    <div>
-      <canvas ref="chart"></canvas>
+  <div v-if="symbolName !== null">
+    <p>Current price of {{ symbolName }}:</p>
+    <div class="actual_price">
+      <span 
+        v-for="(digit, index) in priceDigits" 
+        :key="index" 
+        :class="['price-digit', digitClasses[index]]">
+        {{ digit }}
+      </span>
     </div>
-  </template>
-  
-  <script>
-  import { Chart, registerables } from 'chart.js';
-  Chart.register(...registerables);
-  
-  export default {
-    props: {
-      priceData: {
-        type: Number,
-        required: true
-      }
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    symbolName: {
+      type: String,
+      required: true
     },
-    data() {
-      return {
-        chart: null, // Экземпляр графика
-        chartData: {
-          labels: Array(20).fill(""), // Начальная настройка с пустыми метками
-          datasets: [
-            {
-              label: 'Price',
-              data: Array(20).fill(null), // Начальные значения данных для графика
-              borderColor: 'rgba(75, 192, 192, 1)',
-              backgroundColor: 'rgba(75, 192, 192, 0.2)',
-              fill: true,
-              tension: 0.4
-            }
-          ]
-        },
-        chartOptions: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              display: false
-            },
-            y: {
-              beginAtZero: false,
-              ticks: {
-                callback: function(value) {
-                  return value;
-                }
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      };
-    },
-    watch: {
-      priceData(newPrice) {
-        this.updateChartData(newPrice);
-      }
-    },
-    mounted() {
-      this.chart = new Chart(this.$refs.chart, {
-        type: 'line',
-        data: this.chartData,
-        options: this.chartOptions
-      });
-    },
-    methods: {
-      updateChartData(newPrice) {
-        // Добавляем новую цену в конец данных
-        this.chartData.datasets[0].data.push(newPrice);
-        this.chartData.labels.push(""); // добавляем пустую метку для X-оси
-  
-        // Ограничиваем количество точек на графике (например, до 20)
-        if (this.chartData.datasets[0].data.length > 20) {
-          this.chartData.datasets[0].data.shift();
-          this.chartData.labels.shift();
-        }
-  
-        // Обновляем график
-        this.chart.update();
-      }
-    },
-    beforeDestroy() {
-      // Удаляем график при уничтожении компонента, чтобы избежать утечек памяти
-      if (this.chart) {
-        this.chart.destroy();
-      }
+    formattedPrice: {
+      type: [String, Number],
+      required: true
     }
-  };
-  </script>
-  
-  <style scoped>
-  canvas {
-    height: 100px;
+  },
+  data() {
+    return {
+      previousDigits: [],
+      digitClasses: [], // Хранит классы анимации для каждой цифры
+      previousPrice: null, // Хранит предыдущее значение цены
+    };
+  },
+  computed: {
+    priceDigits() {
+      return String(this.formattedPrice).split('');
+    }
+  },
+  watch: {
+    formattedPrice(newPrice) {
+      const newDigits = String(newPrice).split('');
+      const direction = newPrice > this.previousPrice ? 'price-up' : 'price-down';
+
+      // Применяем класс направления ко всем изменившимся цифрам
+      this.digitClasses = newDigits.map((digit, index) => {
+        if (this.previousDigits[index] && this.previousDigits[index] !== digit) {
+          return direction;
+        }
+        return '';
+      });
+
+      // Устанавливаем таймер для удаления класса анимации после 450 мс
+      setTimeout(() => {
+        this.digitClasses = new Array(newDigits.length).fill('');
+      }, 350);
+
+      // Обновляем previousDigits и previousPrice для сравнения при следующем изменении
+      this.previousDigits = [...newDigits];
+      this.previousPrice = newPrice;
+    }
   }
-  </style>
-  
+}
+</script>
+
+<style scoped>
+.actual_price {
+  font-family: 'Orbitron', sans-serif;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
+  font-weight: 600;
+  font-size: 1.8em;
+  color: white;
+}
+
+.price-digit {
+  display: inline-block;
+  transition: transform 0.45s ease-in-out, opacity 0.45s ease;
+}
+
+/* Анимация прокрутки вверх (рост цены) */
+.price-up {
+  animation: scroll-up 0.85s forwards;
+}
+
+/* Анимация прокрутки вниз (падение цены) */
+.price-down {
+  animation: scroll-down 0.85s forwards;
+}
+
+@keyframes scroll-up {
+  0% {
+    transform: translateY(50%);
+    opacity: 0;
+    color: rgb(3, 190, 3);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes scroll-down {
+  0% {
+    transform: translateY(-50%);
+    opacity: 0;
+    color: rgb(255, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+</style>
