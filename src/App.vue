@@ -138,7 +138,7 @@ export default {
 .wrapper {
   width: 400px;
   height: 300px;
-  border: 3px solid rgb(47, 97, 84);
+  border: none;  /* 3px solid rgb(47, 97, 84); */
   border-radius: 50px;
 }
 .wrapper h1 {
