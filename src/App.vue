@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 bg-gray-800 shadow rounded-lg">
+  <div class="p-6 bg-neutral-800 shadow rounded-3xl">
     <div class="wrapper">
       <h1 class="text-xl border-b">Database Checker</h1>
       <p>Checkout symbol <b>{{ realSymbol == "" ? "in database" : symbolName }}</b></p>
@@ -138,7 +138,7 @@ export default {
 .wrapper {
   width: 400px;
   height: 300px;
-  border: none;  /* 3px solid rgb(47, 97, 84); */
+  border: 1px solid rgb(47, 97, 84); 
   border-radius: 50px;
 }
 .wrapper h1 {
