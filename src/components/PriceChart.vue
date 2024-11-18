@@ -1,7 +1,7 @@
 <template>
   <div v-if="symbolName !== null">
     <p>Current price of {{ symbolName }}:</p>
-    <div class="actual_price">
+    <div class="actual_price" :class="{ 'price-glow': isPriceChanged }">
       <span 
         v-for="(digit, index) in priceDigits" 
         :key="index" 
@@ -29,6 +29,7 @@ export default {
       previousDigits: [],
       digitClasses: [], // Хранит классы анимации для каждой цифры
       previousPrice: null, // Хранит предыдущее значение цены
+      isPriceChanged: false // Управляет эффектом свечения для всей цены
     };
   },
   computed: {
@@ -49,9 +50,13 @@ export default {
         return '';
       });
 
-      // Устанавливаем таймер для удаления класса анимации после 450 мс
+      // Активация эффекта свечения для всей цены
+      this.isPriceChanged = true;
+
+      // Устанавливаем таймеры для удаления классов анимации после 450 мс
       setTimeout(() => {
         this.digitClasses = new Array(newDigits.length).fill('');
+        this.isPriceChanged = false; // Сброс свечения
       }, 350);
 
       // Обновляем previousDigits и previousPrice для сравнения при следующем изменении
@@ -59,7 +64,7 @@ export default {
       this.previousPrice = newPrice;
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -73,8 +78,10 @@ export default {
   font-weight: 600;
   font-size: 1.8em;
   color: white;
+  transition: box-shadow 0.45s ease, opacity 0.45s ease;
 }
 
+/* Анимация для отдельных цифр */
 .price-digit {
   display: inline-block;
   transition: transform 0.45s ease-in-out, opacity 0.45s ease;
@@ -90,6 +97,7 @@ export default {
   animation: scroll-down 0.85s forwards;
 }
 
+/* Анимация прокрутки вверх */
 @keyframes scroll-up {
   0% {
     transform: translateY(50%);
@@ -106,6 +114,7 @@ export default {
   }
 }
 
+/* Анимация прокрутки вниз */
 @keyframes scroll-down {
   0% {
     transform: translateY(-50%);

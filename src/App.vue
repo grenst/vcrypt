@@ -236,7 +236,8 @@ p {
   padding: 5px 8px;
   background: transparent;
   border: 0;
-  border-bottom: 2px solid #110813;
+  box-shadow: 0 4px 0 0 linear-gradient(90deg, rgba(2,36,0,1) 100%, rgba(9,121,64,1) 100%, rgba(2,36,0,1) 100%);
+  border-bottom: 1px solid #224725;
   font-size: 1.2em;
   outline: none;
   position: relative;
@@ -244,7 +245,7 @@ p {
 }
 
 .wrapper input:focus {
-  border-bottom-color: #6e2d7d;
+  border-bottom-color: 2px solid #2d7d36;
 }
 
 button {
