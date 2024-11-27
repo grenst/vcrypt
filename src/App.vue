@@ -11,7 +11,11 @@
       </div>
 
       <form @submit.prevent="checkSymbolAndConnect" class="input-group">
-        <input v-model="symbol" placeholder="Enter symbol" />
+        <input
+          v-model="symbol"
+          @input="handleSymbolChange"
+          placeholder="Enter symbol"
+        />
         <button
           v-if="realSymbol"
           ref="buttonText"
@@ -35,7 +39,7 @@ import PriceChart from './components/PriceChart.vue';
 
 export default {
   components: {
-    PriceChart
+    PriceChart,
   },
   data() {
     return {
@@ -44,7 +48,7 @@ export default {
       ws: null,
       error: null,
       symbolPrecisions: {},
-      chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_=+{}|[]\\;\':"<>?,./`~'.split('')
+      chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_=+{}|[]\\;\':"<>?,./`~'.split(''),
     };
   },
   computed: {
@@ -57,15 +61,26 @@ export default {
     formattedPrice() {
       const decimalPlaces = this.symbolPrecisions[this.symbolName] ?? 2;
       return this.price !== null ? this.price.toFixed(decimalPlaces) : null;
-    }
+    },
   },
   mounted() {
     this.startTickerEffect(this.$refs.titleText);
     this.startTickerEffect(this.$refs.descriptionText);
-    this.startTickerEffect(this.$refs.buttonText);
     if (this.error) this.startTickerEffect(this.$refs.errorText);
   },
   methods: {
+    handleSymbolChange() {
+      // Закрываем WebSocket, если он активен
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+
+      // Сбрасываем связанные данные
+      this.price = null;
+      this.error = null;
+    },
+
     async fetchSymbolPrecision(symbol) {
       try {
         const response = await fetch(`https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}`);
@@ -88,7 +103,7 @@ export default {
         return 2;
       }
     },
-    
+
     getDecimalPlacesFromTickSize(tickSize) {
       const strTickSize = parseFloat(tickSize).toString();
       const decimalPos = strTickSize.indexOf('.');
@@ -122,21 +137,21 @@ export default {
       if (this.ws) {
         this.ws.close();
       }
-      
+
       this.ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@ticker`);
-      
+
       this.ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         this.price = parseFloat(data.c);
       };
-      
+
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         this.error = "WebSocket connection error";
       };
-      
+
       this.ws.onclose = () => {
-        console.log('WebSocket closed');
+        console.log("WebSocket closed");
       };
     },
 
@@ -163,20 +178,20 @@ export default {
         } else {
           done = true;
         }
-        
+
         if (!done) {
           requestAnimationFrame(loop);
         }
       };
 
       loop();
-    }
+    },
   },
   beforeDestroy() {
     if (this.ws) {
       this.ws.close();
     }
-  }
+  },
 };
 </script>
 
