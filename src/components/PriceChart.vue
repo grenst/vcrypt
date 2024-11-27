@@ -68,7 +68,11 @@ export default {
 </script>
 
 <style scoped>
+p {
+  padding-top: 20px;
+}
 .actual_price {
+  padding-top: 40px;
   font-family: 'Orbitron', sans-serif;
   height: 50px;
   display: flex;
@@ -76,7 +80,7 @@ export default {
   justify-content: center;
   gap: 0.1em;
   font-weight: 600;
-  font-size: 1.8em;
+  font-size: 2.8em;
   color: white;
   transition: box-shadow 0.45s ease, opacity 0.45s ease;
 }

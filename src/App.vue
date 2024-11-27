@@ -10,14 +10,17 @@
         <p class="text-check">Checkout symbol <b>{{ realSymbol == "" ? "in database" : symbolName }}</b></p>
       </div>
 
-      <div class="input-group">
+      <form @submit.prevent="checkSymbolAndConnect" class="input-group">
         <input v-model="symbol" placeholder="Enter symbol" />
-        <button v-if="realSymbol" ref="buttonText" 
-                class="m-2 text-black rounded-lg transition ease-in-out delay-50 bg-green-600 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-green-500 duration-150 shadow-green-600/50 hover:shadow-green-500/50" 
-                @click="checkSymbolAndConnect">
-          <img src="../src/assets/enter.png" alt="Enter" class="button-icon"/>
+        <button
+          v-if="realSymbol"
+          ref="buttonText"
+          class="m-2 text-black rounded-lg transition ease-in-out delay-50 bg-green-600 shadow-lg hover:text-white hover:-translate-y-0.3 hover:bg-green-500 duration-150 shadow-green-600/50 hover:shadow-green-500/50"
+          type="submit"
+        >
+          <img src="../src/assets/enter.png" alt="Enter" class="button-icon" />
         </button>
-      </div>
+      </form>
 
       <PriceChart v-if="realSymbol && price !== null" :symbolName="symbolName" :formattedPrice="formattedPrice" />
       <div class="word" v-if="error" ref="errorText">
@@ -260,5 +263,9 @@ button {
   display: inline-flex;
   position: relative;
   z-index: 2;
+}
+
+.PriceChart {
+  padding-top: 60px;
 }
 </style>
